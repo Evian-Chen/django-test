@@ -1,0 +1,30 @@
+# Django
+*.pyc
+__pycache__/
+db.sqlite3
+*.sqlite3
+
+# Virtualenv
+venv/
+env/
+ENV/
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+
+# Static and media files
+staticfiles/
+media/
+
+# Migrations
+*/migrations/
+
+# Node modules (if using frontend)
+node_modules/
