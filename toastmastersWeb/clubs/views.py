@@ -61,7 +61,7 @@ class ClubCreateView(APIView):
     description="使用者可以更新指定社團的詳細資訊"
 )
 class ClubUpdateView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     def put(self, request, name):
         club = Clubs.objects.get(name=name)
         serializer = ClubSerializer(club, data=request.data)
@@ -82,7 +82,7 @@ class ClubUpdateView(APIView):
     description="使用者可以刪除指定的社團"
 )
 class ClubDeleteView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     def delete(self, request, name):
         club = get_object_or_404(Clubs, name=name)
         club.delete()

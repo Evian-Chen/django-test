@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
-
+from django.shortcuts import get_object_or_404
 
 User = get_user_model()  # according to the AUTH_USER_MODEL setting
 
@@ -84,7 +84,7 @@ class LoginView(APIView):
     description="將 refresh token 加入黑名單，使其失效"
 )
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = LogoutSerializer(data=request.data)
@@ -95,4 +95,30 @@ class LogoutView(APIView):
                 return Response({"message": "已成功登出"}, status=204)
             except Exception:
                 return Response({"error": "無效的 token"}, status=400)
+        return Response(serializer.errors, status=400)
+
+
+@extend_schema(
+    responses={
+        200: UserSerializer,
+        404: OpenApiResponse(description="找不到使用者")
+    },
+    tags=["User Profile"],
+    summary="取得或更新使用者資料",
+    description="使用者可以查看或更新自己的個人資料"
+)
+class UserProfileView(APIView):
+    # permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=200)
+
+    def put(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
         return Response(serializer.errors, status=400)

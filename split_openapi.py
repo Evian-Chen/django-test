@@ -1,48 +1,51 @@
-'''
-curl http://localhost:8000/api/schema/?format=openapi -o full_openapi.yaml
-python split_openapi.py
-
-'''
-
-# split_openapi.py
 import os
 import yaml
 import json
 from collections import defaultdict
 
-MODULES = ["users", "clubs"]  
-INPUT_PATH = "openapi.yaml"  
+# 可調整：你的 Django App 名稱（會對應 URL prefix）
+MODULES = ["users", "clubs", "auth"]
+
+# 可調整：你的完整 OpenAPI 輸入檔案位置
+INPUT_PATH = "openapi.yaml"
+
+# 可調整：每個 module 的文件會放在哪裡
 OUTPUT_DIR = "api-doc/src/spec"
 
 def load_openapi_spec(filepath):
-    with open(filepath, "r") as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         if filepath.endswith(".json"):
             return json.load(f)
-        else:
-            return yaml.safe_load(f)
+        return yaml.safe_load(f)
+
+def match_module(path, module):
+    clean = path.lstrip("/")
+    return clean.startswith(module + "/") or f"/{module}/" in path
 
 def split_spec_by_module(spec, modules):
     grouped = defaultdict(dict)
-    for path, details in spec["paths"].items():
+    for path, details in spec.get("paths", {}).items():
         for module in modules:
-            if path.startswith(f"/{module}/"):
+            if match_module(path, module):
                 grouped[module][path] = details
                 break
     return grouped
 
 def write_yaml(output_path, content):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, "w") as f:
-        yaml.dump(content, f, sort_keys=False)
+    with open(output_path, "w", encoding="utf-8") as f:
+        yaml.dump(content, f, sort_keys=False, allow_unicode=True)
 
 def main():
     spec = load_openapi_spec(INPUT_PATH)
     grouped_paths = split_spec_by_module(spec, MODULES)
 
     for module, paths in grouped_paths.items():
+        if not paths:
+            continue
         partial_spec = {
-            "openapi": spec["openapi"],
-            "info": spec["info"],
+            "openapi": spec.get("openapi", "3.0.0"),
+            "info": spec.get("info", {}),
             "paths": paths,
             "components": spec.get("components", {}),
         }
