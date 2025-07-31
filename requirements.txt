@@ -3,3 +3,4 @@ djangorestframework
 environs
 djangorestframework-simplejwt
 drf-spectacular
+openapi-generator-cli

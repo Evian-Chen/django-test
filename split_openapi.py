@@ -10,8 +10,8 @@ import yaml
 import json
 from collections import defaultdict
 
-MODULES = ["login", "offices", "mapping"]  # 你要切出來的 prefix 模組
-INPUT_PATH = "full_openapi.yaml"  # 或 .json
+MODULES = ["users", "clubs"]  
+INPUT_PATH = "openapi.yaml"  
 OUTPUT_DIR = "api-doc/src/spec"
 
 def load_openapi_spec(filepath):

@@ -14,9 +14,9 @@ class Clubs(models.Model):
 class ClubRole(models.TextChoices):
     PRESIDENT = 'president', '社長'
     VICE_PRESIDENT = 'vice_president', '副社長'
-    VICE_PRESIDENT_EDUCATION = 'vice_president_education', '教育副社長', 'VPE'
-    VICE_PRESIDENT_MEMBERSHIP = 'vice_president_membership', '會員副社長', 'VPM'
-    VICE_PRESIDENT_PUBLIC_RELATIONS = 'vice_president_public_relations', '公關副社長', 'VPP'
+    VICE_PRESIDENT_EDUCATION = 'vpe', '教育副社長 (VPE)'
+    VICE_PRESIDENT_MEMBERSHIP = 'vpm', '會員副社長 (VPM)'
+    VICE_PRESIDENT_PUBLIC_RELATIONS = 'vpp', '公關副社長 (VPP)'
     SECRETARY = 'secretary', '書記'
     MEMBER = 'member', '會員'
 

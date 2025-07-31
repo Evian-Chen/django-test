@@ -4,6 +4,141 @@ info:
   version: 1.0.0
   description: API documentation for Toastmasters Web application
 paths:
+  /api/clubs/create/:
+    post:
+      operationId: clubs_create_create
+      description: 使用者可以提交社團的詳細資訊來建立新社團
+      summary: 建立新社團
+      tags:
+      - Clubs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Club'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Club'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Club'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+          description: ''
+        '400':
+          description: 輸入資料錯誤
+  /api/clubs/delete/{name}/:
+    delete:
+      operationId: clubs_delete_destroy
+      description: 使用者可以刪除指定的社團
+      summary: 刪除社團
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - Clubs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '404':
+          description: 找不到社團
+  /api/clubs/detail/{name}/:
+    get:
+      operationId: clubs_detail_retrieve
+      description: 使用者可以根據社團名稱獲取該社團的詳細資訊
+      summary: 取得社團詳細資訊
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - Clubs
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+          description: ''
+        '404':
+          description: 找不到社團
+  /api/clubs/list/:
+    get:
+      operationId: clubs_list_list
+      description: 取得所有社團的列表
+      summary: 取得所有社團
+      tags:
+      - Clubs
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Club'
+          description: ''
+        '404':
+          description: 找不到社團
+  /api/clubs/update/{name}/:
+    put:
+      operationId: clubs_update_update
+      description: 使用者可以更新指定社團的詳細資訊
+      summary: 更新社團資訊
+      parameters:
+      - in: path
+        name: name
+        schema:
+          type: string
+        required: true
+      tags:
+      - Clubs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Club'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Club'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Club'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+          description: ''
+        '400':
+          description: 輸入資料錯誤
+        '404':
+          description: 找不到社團
   /api/users/login/:
     post:
       operationId: users_login_create
@@ -93,6 +228,29 @@ paths:
           description: 輸入資料錯誤
 components:
   schemas:
+    Club:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        location:
+          type: string
+          nullable: true
+          maxLength: 255
+        meeting_time:
+          type: string
+          nullable: true
+          maxLength: 50
+        description:
+          type: string
+          nullable: true
+      required:
+      - id
+      - name
     Login:
       type: object
       properties:

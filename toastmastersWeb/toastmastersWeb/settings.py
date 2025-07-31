@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'users',
+    'clubs',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',  # 用於登出失效
     'rest_framework_simplejwt',  # 用於 JWT 認證
