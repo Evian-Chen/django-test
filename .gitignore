@@ -23,8 +23,17 @@ ENV/
 staticfiles/
 media/
 
-# Migrations
-*/migrations/
+# Migration compiled files (but keep the migration files themselves)
+*/migrations/__pycache__/
+*/migrations/*.pyc
 
 # Node modules (if using frontend)
 node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# Coverage reports
+htmlcov/
+.coverage
