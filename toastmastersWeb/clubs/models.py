@@ -19,15 +19,3 @@ class ClubRole(models.TextChoices):
     VICE_PRESIDENT_PUBLIC_RELATIONS = 'vpp', '公關副社長 (VPP)'
     SECRETARY = 'secretary', '書記'
     MEMBER = 'member', '會員'
-
-class Memberships(models.Model):
-    club = models.ForeignKey(Clubs, on_delete=models.CASCADE, related_name='memberships')
-    user = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, related_name='memberships')
-    role = models.CharField(max_length=50, choices=ClubRole.choices, default=ClubRole.MEMBER)
-    joined_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('club', 'user', 'role')
-
-    def __str__(self):
-        return f"{self.user.username} @ {self.club.name} ({self.role})"
