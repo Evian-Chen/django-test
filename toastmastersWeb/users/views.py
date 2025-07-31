@@ -1,68 +1,98 @@
+from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView # 登入 View
-from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken # 登出相關
-
-from .serializers import RegisterSerializer, UserProfileSerializer
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from .serializers import RegisterSerializer, LoginSerializer, LogoutSerializer, UserSerializer
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
 
-User = get_user_model()
 
-# class RegisterView(APIView):
-#     permission_classes = [permissions.AllowAny] # 註冊允許任何人訪問
+User = get_user_model()  # according to the AUTH_USER_MODEL setting
 
-#     def post(self, request):
-#         serializer = RegisterSerializer(data=request.data)
-#         if serializer.is_valid():
-#             user = serializer.save()
-#             # 註冊成功後，可以選擇自動登入並返回 Token
-#             refresh = RefreshToken.for_user(user)
-#             return Response({
-#                 "message": "用戶註冊成功",
-#                 "user": UserProfileSerializer(user).data,
-#                 "access": str(refresh.access_token),
-#                 "refresh": str(refresh),
-#             }, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# class CustomTokenObtainPairView(TokenObtainPairView):
-#     # 如果你想客製化登入響應，可以在這裡擴展
-#     pass
+@extend_schema(
+    request=RegisterSerializer,
+    responses={
+        201: UserSerializer,
+        400: OpenApiResponse(description="輸入資料錯誤")
+    },
+    tags=["Authentication"],
+    summary="註冊新使用者",
+    description="使用者填寫帳號、密碼、email 與 display_name 來建立新帳號，成功後回傳 JWT token 與使用者資訊"
+)
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
 
-# class LogoutView(APIView):
-#     permission_classes = [permissions.IsAuthenticated] # 登出需要認證
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.create(serializer.validated_data)
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "message": "註冊成功",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "display_name": user.display_name
+                },
+                "access": str(refresh.access_token),
+                "refresh": str(refresh)
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-#     def post(self, request):
-#         try:
-#             refresh_token = request.data["refresh"]
-#             token = RefreshToken(refresh_token)
-#             token.blacklist() # 將 refresh token 加入黑名單，使其失效
 
-#             # 額外：也可以將 Access Token 加入黑名單，但通常 Access Token 壽命短，不需這樣做
-#             # if 'HTTP_AUTHORIZATION' in request.META:
-#             #     access_token_str = request.META['HTTP_AUTHORIZATION'].split(' ')[1]
-#             #     OutstandingToken.objects.filter(token=access_token_str).update(blacklisted_token__is_blacklisted=True)
+@extend_schema(
+    request=LoginSerializer,
+    responses={
+        200: OpenApiTypes.OBJECT,
+        401: OpenApiResponse(description="帳號或密碼錯誤")
+    },
+    tags=["Authentication"],
+    summary="登入",
+    description="輸入帳號與密碼，驗證成功後回傳 access 與 refresh token"
+)
+class LoginView(APIView):
+    permission_classes = [AllowAny]
 
-#             return Response(status=status.HTTP_204_NO_CONTENT)
-#         except KeyError:
-#             return Response({"detail": "需要提供 refresh token。"}, status=status.HTTP_400_BAD_REQUEST)
-#         except Exception as e: # 處理 token 無效等其他錯誤
-#             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = authenticate(
+                username=serializer.validated_data["username"],
+                password=serializer.validated_data["password"]
+            )
+            if user is not None:
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    "message": "登入成功",
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh)
+                })
+            return Response({"error": "帳號或密碼錯誤"}, status=401)
+        return Response(serializer.errors, status=400)
 
-# # 獲取和更新當前用戶資料
-# class MeView(APIView):
-#     permission_classes = [permissions.IsAuthenticated] # 只有認證用戶才能訪問
 
-#     def get(self, request):
-#         serializer = UserProfileSerializer(request.user)
-#         return Response(serializer.data)
+@extend_schema(
+    request=LogoutSerializer,
+    responses={204: None},
+    tags=["Authentication"],
+    summary="登出",
+    description="將 refresh token 加入黑名單，使其失效"
+)
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
 
-#     def patch(self, request):
-#         # 允許部分更新，比如修改 display_name, profile_picture_url
-#         serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                token = RefreshToken(serializer.validated_data["refresh"])
+                token.blacklist()
+                return Response({"message": "已成功登出"}, status=204)
+            except Exception:
+                return Response({"error": "無效的 token"}, status=400)
+        return Response(serializer.errors, status=400)

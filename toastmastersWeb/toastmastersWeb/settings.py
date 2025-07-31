@@ -62,6 +62,7 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
+AUTH_USER_MODEL = 'users.CustomUser'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -72,17 +73,23 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'users',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',  # 用於登出失效
+    'rest_framework_simplejwt',  # 用於 JWT 認證
+    'drf_spectacular',
 ]
 
-# REST Framework 設定
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication', # 將 JWT 認證設為預設
-        'rest_framework.authentication.SessionAuthentication', # 可選，但建議保留用於瀏覽器 API 訪問
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny', # 預設允許任何訪問，再在 Viewset 中細化
-    ),
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Toastmasters Web API',
+    'DESCRIPTION': 'API documentation for Toastmasters Web application',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 MIDDLEWARE = [
