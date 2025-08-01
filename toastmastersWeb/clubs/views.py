@@ -5,7 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import ClubSerializer
 from .models import Clubs
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes, OpenApiParameter
+from datetime import time
 
 
 # GET /list/
@@ -104,4 +105,80 @@ class ClubDetailView(APIView):
     def get(self, request, name):
         club = get_object_or_404(Clubs, name=name)
         serializer = ClubSerializer(club)
+        return Response(serializer.data)
+
+
+class ClubSearchView(APIView):
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='weekday',
+                type=OpenApiTypes.INT,
+                description='星期幾 (0=星期一, 1=星期二, ..., 6=星期日)'
+            ),
+            OpenApiParameter(
+                name='start_time_after',
+                type=OpenApiTypes.STR,
+                description='開始時間晚於此時間 (格式: HH:MM)'
+            ),
+            OpenApiParameter(
+                name='start_time_before',
+                type=OpenApiTypes.STR,
+                description='開始時間早於此時間 (格式: HH:MM)'
+            ),
+            OpenApiParameter(
+                name='available_at',
+                type=OpenApiTypes.STR,
+                description='在此時間點正在開會的分會 (格式: HH:MM)'
+            ),
+        ],
+        responses={200: 'ClubSerializer(many=True)'},
+        tags=["Clubs"],
+        summary="搜尋分會",
+        description="根據開會時間搜尋分會"
+    )
+    def get(self, request):
+        from .models import Clubs
+        from .serializers import ClubSerializer  # 你需要創建這個序列化器
+        
+        queryset = Clubs.objects.all()
+        
+        # 按星期搜尋
+        weekday = request.query_params.get('weekday')
+        if weekday is not None:
+            try:
+                queryset = queryset.filter(meeting_weekday=int(weekday))
+            except ValueError:
+                return Response({'error': 'weekday 必須是 0-6 的整數'}, status=400)
+        
+        # 按開始時間範圍搜尋
+        start_time_after = request.query_params.get('start_time_after')
+        if start_time_after:
+            try:
+                time_obj = time.fromisoformat(start_time_after)
+                queryset = queryset.filter(meeting_start_time__gte=time_obj)
+            except ValueError:
+                return Response({'error': 'start_time_after 格式錯誤，應為 HH:MM'}, status=400)
+        
+        start_time_before = request.query_params.get('start_time_before')
+        if start_time_before:
+            try:
+                time_obj = time.fromisoformat(start_time_before)
+                queryset = queryset.filter(meeting_start_time__lte=time_obj)
+            except ValueError:
+                return Response({'error': 'start_time_before 格式錯誤，應為 HH:MM'}, status=400)
+        
+        # 搜尋特定時間點正在開會的分會
+        available_at = request.query_params.get('available_at')
+        if available_at:
+            try:
+                time_obj = time.fromisoformat(available_at)
+                queryset = queryset.filter(
+                    meeting_start_time__lte=time_obj,
+                    meeting_end_time__gte=time_obj
+                )
+            except ValueError:
+                return Response({'error': 'available_at 格式錯誤，應為 HH:MM'}, status=400)
+        
+        serializer = ClubSerializer(queryset, many=True)
         return Response(serializer.data)
